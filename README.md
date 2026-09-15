@@ -1,343 +1,60 @@
-UPI Fraud Detection using Anomaly Detection
+# UPI Fraud Detection using Anomaly Detection
 
-An end-to-end machine learning system for detecting potentially fraudulent UPI transactions using behavioral analysis, statistical anomaly detection, Isolation Forest, and transparent risk scoring.
+An end-to-end UPI fraud detection system that identifies suspicious transactions using behavioral analysis, statistical anomaly detection, Isolation Forest, and a transparent risk-scoring framework.
 
-This project uses a synthetic dataset and is intended for learning and portfolio purposes.
+## Overview
 
-Features
+The system analyzes transaction history to detect unusual behavior such as high transaction amounts, rapid transaction bursts, new devices, new locations, and new recipients.
 
-Behavioral feature engineering
+Multiple anomaly signals are combined to assign each transaction a risk score and classify it as Low, Medium, or High risk.
 
-IQR-based anomaly detection
+## Detection Methods
 
-Isolation Forest
+### 1. High Amount Anomaly
+Compares the current transaction amount with the user's historical average.  
+A significantly higher amount generates a suspicious-behavior signal.
 
-Time-based anomaly detection
+### 2. IQR Anomaly
+Uses Q1, Q3, and IQR to identify statistical outliers.  
+Applied to `amount`, `amount_deviation`, and `transactions_last_hour`.
 
-Rapid transaction burst detection
+### 3. Isolation Forest
+Uses unsupervised machine learning to identify unusual combinations of behavioral features.  
+The model is trained without using the simulated fraud labels.
 
-New device, location, and recipient detection
+### 4. Time Anomaly
+Compares hourly transaction activity with the user's previous six hourly buckets.  
+Activity above `rolling_mean + 2.5 × rolling_std` is treated as anomalous.
 
-Transparent risk scoring
+### 5. Rapid Burst
+Counts transactions made by a sender during the previous hour.  
+A sudden increase in transaction frequency can indicate suspicious activity.
 
-FastAPI REST API
+### 6. New Device
+Compares the current device with previously observed devices for the sender.  
+A previously unseen device adds a risk signal.
 
-MySQL database
+### 7. New Location
+Compares the current location with the sender's historical locations.  
+A previously unseen location adds a behavioral risk signal.
 
-Streamlit dashboard
+### 8. New Recipient
+Checks whether the sender has previously transacted with the receiver.  
+A first-time recipient contributes an additional risk signal.
 
-Model evaluation and testing
+## Risk Scoring
 
-How It Works
-Transaction
-     |
-     v
-Feature Engineering
-     |
-     +-------- IQR Anomaly
-     |
-     +-------- Isolation Forest
-     |
-     +-------- Time Anomaly
-     |
-     +-------- Behavioral Signals
-     |
-     v
-Risk Scoring
-     |
-     v
-LOW / MEDIUM / HIGH
+| Signal | Score |
+|---|---:|
+| IQR anomaly | +1 |
+| Isolation Forest anomaly | +1 |
+| Time anomaly | +1 |
+| Device changed | +1 |
+| Location changed | +1 |
+| New recipient | +1 |
+| Amount > 3σ above historical average | +1 |
 
-
-The system compares each transaction with the sender's historical behavior to identify unusual activity.
-
-Detection Methods
-IQR Anomaly Detection
-
-Uses the Interquartile Range to detect statistical outliers in:
-
-Transaction amount
-
-Amount deviation
-
-Transactions in the last hour
-
-IQR = Q3 - Q1
-
-Upper Bound = Q3 + 1.5 × IQR
-Lower Bound = Q1 - 1.5 × IQR
-
-Isolation Forest
-
-An unsupervised machine learning algorithm that detects unusual combinations of behavioral features.
-
-contamination = 0.06
-
-Time Anomaly Detection
-
-Uses the previous six hourly activity buckets to identify sudden increases in transaction activity.
-
-Current Activity >
-Rolling Mean + 2.5 × Rolling Standard Deviation
-
-Behavioral Signals
-
-The system detects:
-
-New device
-
-New location
-
-New recipient
-
-Rapid transaction burst
-
-Unusually high transaction amount
-
-Risk Scoring
-Signal	Score
-IQR anomaly	+1
-Isolation Forest anomaly	+1
-Time anomaly	+1
-New device	+1
-New location	+1
-New recipient	+1
-High amount	+1
-Risk Levels
-Score	Risk Level
-0–1	LOW
-2–3	MEDIUM
-4+	HIGH
-
-The risk score is a ranking signal and should not be interpreted as a calibrated probability of fraud.
-
-Dataset
-
-The project uses approximately 10,000 synthetic UPI transactions.
-
-Features
-
-Sender ID
-
-Receiver ID
-
-Amount
-
-Merchant category
-
-Transaction type
-
-Location
-
-Device type
-
-UPI channel
-
-Timestamp
-
-Simulated Fraud Patterns
-high_amount
-odd_hour
-new_device
-new_location
-new_receiver
-rapid_burst
-
-
-The simulated fraud labels are used only for evaluation and are not provided as inputs to the unsupervised anomaly detection models.
-
-Model Evaluation
-Method	Precision	Recall	F1 Score
-IQR	0.264	0.483	0.342
-Isolation Forest	0.739	0.528	0.616
-Time Anomaly	0.511	0.281	0.363
-Combined MEDIUM+	0.493	0.677	0.571
-Combined HIGH	0.865	0.096	0.173
-ROC-AUC
-Combined Risk Score ROC-AUC = 0.873
-
-System Architecture
-Streamlit Dashboard
-        |
-        v
-   FastAPI Backend
-        |
-        v
-Feature Engineering
-        |
-        v
-Anomaly Detection
-        |
-        v
-   Risk Scoring
-        |
-        v
-      MySQL
-
-Project Structure
-upi-fraud-detection/
-|
-├── api/
-│   ├── main.py
-│   ├── routes.py
-│   └── database.py
-|
-├── dashboard/
-│   └── app.py
-|
-├── src/
-│   ├── data_generation.py
-│   ├── feature_engineering.py
-│   ├── anomaly_detection.py
-│   ├── predict_service.py
-│   └── ...
-|
-├── models/
-├── data/
-├── reports/
-├── sql/
-├── tests/
-|
-├── run_project.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
-
-Tech Stack
-
-Python
-
-Pandas
-
-NumPy
-
-Scikit-learn
-
-FastAPI
-
-Pydantic
-
-MySQL
-
-SQLAlchemy
-
-PyMySQL
-
-Streamlit
-
-Joblib
-
-Pytest
-
-Git
-
-Installation
-Clone Repository
-git clone <repository-url>
-cd upi-fraud-detection
-
-Create Virtual Environment
-python -m venv venv
-
-Activate Environment
-Windows
-.\venv\Scripts\Activate.ps1
-
-Linux / macOS
-source venv/bin/activate
-
-Install Dependencies
-pip install -r requirements.txt
-
-Environment Configuration
-
-Create a .env file in the project root.
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=upi_fraud_db
-DB_USER=upi_app
-DB_PASSWORD=your_password
-
-API_HOST=0.0.0.0
-API_PORT=8000
-API_BASE_URL=http://localhost:8000
-
-
-Do not commit .env or production credentials to GitHub.
-
-Running the Project
-Run Complete Pipeline
-python run_project.py
-
-
-This runs data generation, feature engineering, anomaly detection, evaluation, and database loading.
-
-Start FastAPI
-uvicorn api.main:app --reload
-
-
-API:
-
-http://localhost:8000
-
-
-Swagger documentation:
-
-http://localhost:8000/docs
-
-Start Streamlit
-streamlit run dashboard/app.py
-
-
-Dashboard:
-
-http://localhost:8501
-
-Run Tests
-pytest tests/ -v
-
-API Endpoints
-Method	Endpoint	Description
-GET	/health	API, model, and database status
-POST	/predict	Predict transaction risk
-GET	/alerts	Retrieve fraud alerts
-GET	/transactions	Retrieve transactions
-Limitations
-
-Uses synthetic transaction data
-
-Fraud labels are simulated
-
-Risk score is not a calibrated probability
-
-Real-world fraud patterns may differ
-
-New users may have limited historical behavior
-
-No direct connection to UPI or banking systems
-
-Future Improvements
-
-Real-time processing with Apache Kafka
-
-Redis-based feature storage
-
-Graph-based fraud detection
-
-SHAP-based explainability
-
-Model drift monitoring
-
-Automated model retraining
-
-Docker and Kubernetes deployment
-
-API authentication and authorization
-
-Conclusion
-
-This project demonstrates an end-to-end UPI fraud detection pipeline combining statistical anomaly detection, unsupervised machine learning, temporal analysis, behavioral signals, risk scoring, REST APIs, database persistence, and an interactive dashboard.
-
-It is designed as a portfolio and learning implementation of a real-world fraud detection architecture.
+### Risk Levels
+0–1  → LOW
+2–3  → MEDIUM
+4+   → HIGH
